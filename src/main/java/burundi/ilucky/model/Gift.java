@@ -12,4 +12,5 @@ public class Gift {
     private String name;
     private long noItem;
     private String type;
+    private Double percent;
 }

@@ -27,6 +27,9 @@ public class WebSecurityConfig {
 
     @Autowired
     UserDetailsServiceImpl userService;
+    public WebSecurityConfig(UserDetailsServiceImpl userService) {
+        this.userService = userService;
+    }
 
     @Bean
     public JwtFilter jwtAuthenticationFilter() {
@@ -49,7 +52,7 @@ public class WebSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/","/api/lucky/*","/api/auth/*","/actuator/*").permitAll()
+                        .requestMatchers("/api/user/**","/api/lucky/**","/api/auth/**","/actuator/**","/api/payments/**").permitAll()
 
                         .anyRequest().authenticated()
                 )

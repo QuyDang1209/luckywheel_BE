@@ -16,7 +16,7 @@ import java.util.Date;
 public class UserDTO {
 	
     private Long id;
-    private String phone;
+    private String username;
     private Date addTime;
     private long totalPlay;
     private long totalStar;
@@ -26,12 +26,15 @@ public class UserDTO {
     
     @JsonProperty("isWin")
     private boolean isWin;
+    private long totalVnd;
     
     
     public UserDTO(User user) {
         this.id = user.getId();
+        this.username=user.getUsername();
         this.addTime = user.getAddTime();
         this.totalPlay = user.getTotalPlay();
         this.totalStar = user.getTotalStar();
+        this.totalVnd = user.getTotalVnd();
     }
 }

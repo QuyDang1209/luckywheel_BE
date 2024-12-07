@@ -21,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/lucky")
 @Log4j2
+@CrossOrigin("*")
 public class LuckyController {
     @Autowired
     private UserService userService;

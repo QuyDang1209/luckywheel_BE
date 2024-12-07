@@ -38,7 +38,8 @@ public class LuckyService {
         LuckyHistory luckyHistory = new LuckyHistory();
         if(gift.getType().equals("VND")) {
             user.setTotalVnd(user.getTotalVnd() + gift.getNoItem());
-        } else if(gift.getType().equals("STARS")) {
+        }
+        if(gift.getType().equals("STARS")) {
             user.setTotalStar(user.getTotalStar() + gift.getNoItem());
         }
 
