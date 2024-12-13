@@ -4,14 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
+import jakarta.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -23,7 +16,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
-@Table(name = "_user")
+@Table(name = "_user", indexes = {
+        @Index(name = "idx_total_star", columnList = "totalStar")})
 @Data
 @ToString
 @AllArgsConstructor
@@ -49,7 +43,7 @@ public class User implements UserDetails {
     private long totalPlay;
 
     private long totalVnd;
-
+    @Column(nullable = false)
     private long totalStar;
 
 

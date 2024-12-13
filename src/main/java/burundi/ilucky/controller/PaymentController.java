@@ -1,6 +1,8 @@
 package burundi.ilucky.controller;
 
+import burundi.ilucky.model.User;
 import burundi.ilucky.service.PaymentService;
+import burundi.ilucky.service.UserService;
 import com.paypal.api.payments.Links;
 import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.PayPalRESTException;
@@ -8,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,6 +25,8 @@ public class PaymentController {
 
     @Autowired
     private final PaymentService paymentService;
+    @Autowired
+    private UserService userService;
 
     private static final String successUrl = "http://localhost:3456/payment_success";
 
@@ -59,10 +65,12 @@ public class PaymentController {
     }
 
     // Xử lý thành công
-    @GetMapping("/success")
+    @GetMapping("/success/{total}")
     public ResponseEntity<?> executePayment(
             @RequestParam("paymentId") String paymentId,
-            @RequestParam("payerId") String payerId) {
+            @RequestParam("payerId") String payerId,
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long total) {
         try {
             Payment payment = paymentService.executePayment(paymentId, payerId);
 
@@ -73,7 +81,9 @@ public class PaymentController {
             response.put("paymentId", paymentId);
             response.put("payerId", payerId);
             response.put("paymentDetails", payment.toJSON());
-
+            // lấy thông tin user và lưu số tiền vừa mới nộp vào dữ liệu người chơi
+            User user = userService.findByUserName(userDetails.getUsername());
+            userService.depositMoney(user,total);
             return ResponseEntity.ok(response);
         } catch (PayPalRESTException e) {
             // Chuẩn bị phản hồi khi thất bại

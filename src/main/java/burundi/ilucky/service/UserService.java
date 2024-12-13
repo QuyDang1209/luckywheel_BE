@@ -65,11 +65,11 @@ public class UserService {
 			userRepository.save(user);
 		}else {
 			LocalDate date1 = now.toInstant()
-					.atZone(ZoneId.systemDefault())  // Đặt múi giờ
-					.toLocalDate();                 // Chuyển thành LocalDate
+					.atZone(ZoneId.systemDefault())
+					.toLocalDate();
 
 			LocalDate date2 = date.toInstant()
-					.atZone(ZoneId.systemDefault())  // Đặt múi giờ
+					.atZone(ZoneId.systemDefault())
 					.toLocalDate();
 			if(!date1.equals(date2)){
 				user.setLastUpdate(now);

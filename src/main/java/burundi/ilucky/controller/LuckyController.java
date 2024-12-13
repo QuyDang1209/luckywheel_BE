@@ -8,6 +8,7 @@ import burundi.ilucky.model.dto.LuckyHistoryDTO;
 import burundi.ilucky.payload.LuckyResponse;
 import burundi.ilucky.service.GiftService;
 import burundi.ilucky.service.LuckyService;
+import burundi.ilucky.service.PlayQueueService;
 import burundi.ilucky.service.UserService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.CompletableFuture;
 
 import java.util.List;
 
@@ -28,58 +31,70 @@ public class LuckyController {
 
     @Autowired
     private LuckyService luckyService;
+    @Autowired
+    private PlayQueueService playQueueService;
 
     @PostMapping("/play")
-    public ResponseEntity<?> play(@AuthenticationPrincipal UserDetails userDetails) {
-        try {
+    public CompletableFuture<ResponseEntity<?>> play(@AuthenticationPrincipal UserDetails userDetails) {
+        // Dùng queue
+        if (userDetails == null) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest().body("Phiên đăng nhập hết hạn, đăng nhập lại")
+            );
+        }
 
-            if(userDetails != null) {
-                User user = userService.findByUserName(userDetails.getUsername());
+        String username = userDetails.getUsername();
+        return playQueueService.submitTaskWithResult(() -> {
+            try {
+                User user = userService.findByUserName(username);
 
-                if(user.getTotalPlay() <= 0) {
+                if (user.getTotalPlay() <= 0) {
                     return ResponseEntity.ok(new Response("FAILED", "Bạn đã hết lượt chơi. Mua thêm để chơi tiếp"));
                 } else {
                     Gift gift = luckyService.lucky(user);
                     return ResponseEntity.ok(new LuckyResponse("OK", gift, user.getTotalPlay()));
                 }
-            } else {
-                Gift gift = luckyService.lucky();
-                return ResponseEntity.ok(new LuckyResponse("OK", gift));
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError()
+                        .body("An error occurred: " + e.getMessage());
             }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PostMapping("/history")
-    public ResponseEntity<?> history(@AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            if(userDetails != null) {
-                User user = userService.findByUserName(userDetails.getUsername());
-                List<LuckyHistory> luckyHistories = luckyService.getHistoriesByUserId(user.getId());
-                List<LuckyHistoryDTO> luckyGiftHistoriesDTO = luckyService.convertLuckyHistoriesToDTO(luckyHistories);
-                return ResponseEntity.ok(luckyGiftHistoriesDTO);
-            } else {
-                List<LuckyHistory> luckyHistories = luckyService.getHistoriesByUserId(null);
-                List<LuckyHistoryDTO> luckyGiftHistoriesDTO = luckyService.convertLuckyHistoriesToDTO(luckyHistories);
-                return ResponseEntity.ok(luckyGiftHistoriesDTO);
-            }
-
-        } catch (Exception e) {
-            log.warn(e);
-            return ResponseEntity.internalServerError().build();
-        }
+        }).exceptionally(e -> {
+            // Xử lý khi queue đầy hoặc có lỗi khác
+            return ResponseEntity.status(429).body("Queue is full. Please try again later.");
+        });
     }
 
 
-    @PostMapping("/get_all_gift")
-    public ResponseEntity<?> getAllGift() {
-        try {
-            return ResponseEntity.ok(GiftService.gifts);
-        } catch (Exception e) {
-            log.warn(e);
-            return ResponseEntity.internalServerError().build();
+
+@PostMapping("/history")
+public ResponseEntity<?> history(@AuthenticationPrincipal UserDetails userDetails) {
+    try {
+        if (userDetails != null) {
+            User user = userService.findByUserName(userDetails.getUsername());
+            List<LuckyHistory> luckyHistories = luckyService.getHistoriesByUserId(user.getId());
+            List<LuckyHistoryDTO> luckyGiftHistoriesDTO = luckyService.convertLuckyHistoriesToDTO(luckyHistories);
+            return ResponseEntity.ok(luckyGiftHistoriesDTO);
+        } else {
+            List<LuckyHistory> luckyHistories = luckyService.getHistoriesByUserId(null);
+            List<LuckyHistoryDTO> luckyGiftHistoriesDTO = luckyService.convertLuckyHistoriesToDTO(luckyHistories);
+            return ResponseEntity.ok(luckyGiftHistoriesDTO);
         }
+
+    } catch (Exception e) {
+        log.warn(e);
+        return ResponseEntity.internalServerError().build();
     }
+}
+
+
+@PostMapping("/get_all_gift")
+public ResponseEntity<?> getAllGift() {
+    try {
+        return ResponseEntity.ok(GiftService.gifts);
+    } catch (Exception e) {
+        log.warn(e);
+        return ResponseEntity.internalServerError().build();
+    }
+}
 
 }
